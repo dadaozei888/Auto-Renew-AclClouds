@@ -3,7 +3,7 @@ name: EKNodes Auto Renew
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [ek_renew]
+    types: [renew_voer]
 
 jobs:
   renew:
