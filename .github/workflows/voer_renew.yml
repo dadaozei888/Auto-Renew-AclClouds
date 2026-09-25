@@ -44,7 +44,7 @@ jobs:
 #          VOER_PASSWORD: ${{ secrets.VOER_PASSWORD }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+          SOCKS5_PROXY: ${{ secrets.EK_XRAY_CONFIG }}
         run: |
           xvfb-run -a -s "-screen 0 1920x1080x24" python -u renew_voer.py
 
