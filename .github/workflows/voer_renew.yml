@@ -39,7 +39,7 @@ jobs:
       - name: Run Renew Script
         env:
 #          VOER_SERVER_ID: ${{ secrets.VOER_SERVER_ID }}
-          VOER_COOKIES: ${{ secrets.EK_COOKIES }}
+          VOER_COOKIES: ${{ secrets.EK_COOKIE }}
 #          VOER_EMAIL: ${{ secrets.VOER_EMAIL || secrets.VOER_USERNAME }}
 #          VOER_PASSWORD: ${{ secrets.VOER_PASSWORD }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
