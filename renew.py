@@ -24,7 +24,7 @@ except ImportError:
 
 BASE_URL = "https://aclclouds.com"
 LOGIN_URL = f"{BASE_URL}/auth/login"
-SERVER_ID = "75e19d55"
+SERVER_ID = "72927796"
 SERVER_CONSOLE_URL = f"{BASE_URL}/server/{SERVER_ID}"
 
 LOCAL_HTTP_PORT = 18080
