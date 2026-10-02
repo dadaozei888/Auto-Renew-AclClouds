@@ -1,0 +1,89 @@
+name: ACLClouds Auto Renew
+
+on:
+  schedule:
+    # 北京时间 07:43 / 15:43 / 23:43 各一次
+    # 续期窗口为到期前 48 小时, 一天 3 次 => 窗口内有约 6 次机会, 不怕单次失败
+    - cron: "48 23,7,15 * * *"
+  workflow_dispatch: # 支持手动点 "Run workflow" 测试
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # 不要开 cache: pip —— 它强制要求仓库里有 requirements.txt
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install "seleniumbase>=4.30.0" "requests>=2.31.0"
+
+      - name: Ensure Chrome and Xvfb
+        run: |
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y google-chrome-stable
+          fi
+          if ! command -v Xvfb >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+          google-chrome --version
+
+      - name: Install gost (仅当配置了 SOCKS5_PROXY)
+        if: env.SOCKS5_PROXY != ''
+        run: |
+          # gost v2 二进制在旧仓库 ginuerzh/gost, 是 gzip 单文件(不是 tar.gz)
+          curl -fL --retry 3 \
+            https://github.com/ginuerzh/gost/releases/download/v2.11.5/gost-linux-amd64-2.11.5.gz \
+            -o gost.gz
+          file gost.gz
+          gunzip -f gost.gz
+          chmod +x gost
+          # 确认是 Linux 可执行文件而不是错误页面
+          if ! file gost | grep -q ELF; then
+            echo "❌ gost 下载内容不是可执行文件"; cat gost | head -20; exit 1
+          fi
+          sudo mv gost /usr/local/bin/gost
+          gost -V
+
+      - name: Run renew (Xvfb 虚拟显示器)
+        env:
+          ACL_USERNAME: ${{ secrets.ACL_USERNAME }}
+          ACL_PASSWORD: ${{ secrets.ACL_PASSWORD }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          SOCKS5_PROXY: ${{ secrets.SOCKS5_PROXY }}
+        run: |
+          export DISPLAY=:99
+          Xvfb :99 -screen 0 1920x1080x24 &
+          sleep 2
+          # 不管 py 文件放在仓库根目录还是子文件夹都能找到
+          SCRIPT=$(find . -name aclclouds_renew.py -not -path '*/.git/*' | head -1)
+          echo "Using script: $SCRIPT"
+          if [ -z "$SCRIPT" ]; then
+            echo "❌ 仓库里没找到 aclclouds_renew.py，请确认脚本已上传"
+            find . -type f | head -50
+            exit 1
+          fi
+          python "$SCRIPT"
+
+      - name: Upload screenshots (失败时排查用)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aclclouds-screenshots
+          path: "*.png"
+          if-no-files-found: ignore
+          retention-days: 7
